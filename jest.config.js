@@ -1,3 +1,3 @@
 module.exports = {
-  projects: ['<rootDir>/apps/query-autocomplete'],
+  projects: ['<rootDir>/apps/query-autocomplete', '<rootDir>/libs/parser'],
 };

@@ -20,7 +20,9 @@
               "apps/query-autocomplete/src/favicon.ico",
               "apps/query-autocomplete/src/assets"
             ],
-            "styles": ["apps/query-autocomplete/src/styles.scss"],
+            "styles": [
+              "apps/query-autocomplete/src/styles.scss"
+            ],
             "scripts": []
           },
           "configurations": {
@@ -78,12 +80,17 @@
               "apps/query-autocomplete/tsconfig.spec.json",
               "apps/query-autocomplete/tsconfig.editor.json"
             ],
-            "exclude": ["**/node_modules/**", "!apps/query-autocomplete/**/*"]
+            "exclude": [
+              "**/node_modules/**",
+              "!apps/query-autocomplete/**/*"
+            ]
           }
         },
         "test": {
           "builder": "@nrwl/jest:jest",
-          "outputs": ["coverage/apps/query-autocomplete"],
+          "outputs": [
+            "coverage/apps/query-autocomplete"
+          ],
           "options": {
             "jestConfig": "apps/query-autocomplete/jest.config.js",
             "passWithNoTests": true
@@ -91,32 +98,32 @@
         }
       }
     },
-    "query-autocomplete-e2e": {
-      "root": "apps/query-autocomplete-e2e",
-      "sourceRoot": "apps/query-autocomplete-e2e/src",
-      "projectType": "application",
+    "parser": {
+      "root": "libs/parser",
+      "sourceRoot": "libs/parser/src",
+      "projectType": "library",
       "architect": {
-        "e2e": {
-          "builder": "@nrwl/cypress:cypress",
-          "options": {
-            "cypressConfig": "apps/query-autocomplete-e2e/cypress.json",
-            "tsConfig": "apps/query-autocomplete-e2e/tsconfig.e2e.json",
-            "devServerTarget": "query-autocomplete:serve"
-          },
-          "configurations": {
-            "production": {
-              "devServerTarget": "query-autocomplete:serve:production"
-            }
-          }
-        },
         "lint": {
           "builder": "@angular-devkit/build-angular:tslint",
           "options": {
-            "tsConfig": ["apps/query-autocomplete-e2e/tsconfig.e2e.json"],
+            "tsConfig": [
+              "libs/parser/tsconfig.lib.json",
+              "libs/parser/tsconfig.spec.json"
+            ],
             "exclude": [
               "**/node_modules/**",
-              "!apps/query-autocomplete-e2e/**/*"
+              "!libs/parser/**/*"
             ]
+          }
+        },
+        "test": {
+          "builder": "@nrwl/jest:jest",
+          "outputs": [
+            "coverage/libs/parser"
+          ],
+          "options": {
+            "jestConfig": "libs/parser/jest.config.js",
+            "passWithNoTests": true
           }
         }
       }
