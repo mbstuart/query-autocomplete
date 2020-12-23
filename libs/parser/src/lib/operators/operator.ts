@@ -1,11 +1,12 @@
-import { QueryValue } from "../models/parsed-query/query-value";
+import { AtomicNode } from '../models';
+import { QueryValue } from '../models/parsed-query/query-value';
 
 export interface Operator {
+  name: string;
 
-    name: string;
+  key: string;
 
-    key: string;
+  valueParser(text: string): QueryValue[];
 
-    valueParser(text: string): QueryValue[]
-
+  valueStringifer(operatorKey: string, query: AtomicNode): string;
 }

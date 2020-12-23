@@ -8,8 +8,8 @@ import {
 import { Operator } from './operator';
 
 export const DefaultOperators: { [key: string]: Operator } = {
-  IN: new InOperator(),
   IS: new InOperator(),
+  IN: new InOperator(),
   '<=': new LTEOperator(),
   '<': new LTOperator(),
   '>=': new GTEOperator(),

@@ -1,11 +1,8 @@
 import { Operator } from '../operator';
+import { NumericalOperator } from './numerical-operator';
 
-export class LTOperator implements Operator {
+export class LTOperator extends NumericalOperator implements Operator {
   name = 'Less than';
 
   key = 'LT';
-
-  valueParser(text: string): number[] {
-    return [parseFloat(text.trim())];
-  }
 }

@@ -1,3 +1,4 @@
+import { AtomicNode } from '../models';
 import { Operator } from './operator';
 
 export class InOperator implements Operator {
@@ -13,6 +14,12 @@ export class InOperator implements Operator {
     return text
       .split(',')
       .map((field) => this.removeQuotesIfPresent(field.trim()));
+  }
+
+  valueStringifer(operatorKey: string, query: AtomicNode): string {
+    return `[${query.values
+      .map((val: string) => (val.includes(' ') ? `"${val}"` : val))
+      .join(', ')}]`;
   }
 
   private removeQuotesIfPresent(field: string) {

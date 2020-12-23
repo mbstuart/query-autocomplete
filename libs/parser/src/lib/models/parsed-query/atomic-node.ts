@@ -1,12 +1,10 @@
-import { OperatorType } from "./operators";
-import { QueryValue } from "./query-value";
+import { OperatorType } from './operators';
+import { QueryValue } from './query-value';
 
 export interface AtomicNode {
-    
-    property: string;
+  property: string;
 
-    operator: OperatorType;
+  operator: OperatorType;
 
-    values: QueryValue[];
-
+  values: QueryValue[];
 }
