@@ -1,13 +1,8 @@
-import { AtomicNode } from './atomic-node';
-import { LogicalNode } from './logical-node';
-import { NodePosition } from './node-position';
+import { AtomicNode, AtomicNodeWithPosition } from './atomic-node';
+import { LogicalNode, LogicalNodeWithPosition } from './logical-node';
 
 export type QueryNode = AtomicNode | LogicalNode;
 
-type AtomicNodeWithPosition = AtomicNode & { position: NodePosition };
-
 export type QueryNodeWithPosition =
   | AtomicNodeWithPosition
-  | (LogicalNode<QueryNode & { position: NodePosition }> & {
-      position: NodePosition;
-    });
+  | LogicalNodeWithPosition;

@@ -5,5 +5,7 @@ export interface NodePosition {
 
   end: number;
 
-  getTokenAtPosition(index: number): QueryToken;
+  tokenPositions: {
+    [start: number]: QueryToken;
+  };
 }

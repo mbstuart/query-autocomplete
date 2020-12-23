@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { ParsedQuery } from '@query-ac/parser';
+import { IParsedQuery } from '@query-ac/parser';
 
 @Component({
   selector: 'query-autocomplete-root',
@@ -9,7 +9,7 @@ import { ParsedQuery } from '@query-ac/parser';
 export class AppComponent {
   query: string;
 
-  public queryUpdated(query: ParsedQuery) {
+  public queryUpdated(query: IParsedQuery) {
     this.query = JSON.stringify(query, null, 2);
   }
 }

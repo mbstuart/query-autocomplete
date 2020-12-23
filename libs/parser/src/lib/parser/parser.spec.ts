@@ -1,4 +1,10 @@
-import { ParsedQuery } from '../models';
+import {
+  IParsedQuery,
+  isLogicalNodeWithPosition,
+  ParsedQuery,
+  Query,
+  QueryNodeWithPosition,
+} from '../models';
 import { Parser } from './parser';
 
 describe('parser', () => {
@@ -6,7 +12,9 @@ describe('parser', () => {
 
   //#region Queries
 
-  const queries: { [key: string]: { input: string; expected: ParsedQuery } } = {
+  const queries: {
+    [key: string]: { input: string; expected: Query };
+  } = {
     query1: {
       input: '(region IS Europe OR value < 30) AND sector IS Pharma',
       expected: {
@@ -115,32 +123,58 @@ describe('parser', () => {
   });
 
   it('should return parsed object from string', () => {
-    const parsedQuery = parser.parse(queries['query1'].input);
+    const parsedQuery = parser.parse(queries['query1'].input).toQuery();
 
-    // console.log(JSON.stringify(parsedQuery, null, 2));
-
-    const expectedOutput: ParsedQuery = queries['query1'].expected;
+    const expectedOutput: Query = queries['query1'].expected;
 
     expect(parsedQuery).toEqual(expectedOutput);
   });
 
   it('should be able to handle quoted strings', () => {
-    const parsedQuery = parser.parse(queries['queryWithQuotations'].input);
+    const parsedQuery = parser
+      .parse(queries['queryWithQuotations'].input)
+      .toQuery();
 
-    // console.log(JSON.stringify(parsedQuery, null, 2));
-
-    const expectedOutput: ParsedQuery = queries['queryWithQuotations'].expected;
+    const expectedOutput: Query = queries['queryWithQuotations'].expected;
 
     expect(parsedQuery).toEqual(expectedOutput);
   });
 
   it('should be able to handle multiple strings for IN', () => {
-    const parsedQuery = parser.parse(queries['queryMultipleValues'].input);
+    const parsedQuery = parser
+      .parse(queries['queryMultipleValues'].input)
+      .toQuery();
+
+    const expectedOutput: Query = queries['queryMultipleValues'].expected;
+
+    expect(parsedQuery).toEqual(expectedOutput);
+  });
+
+  it('should be able to correctly parse positions', () => {
+    const input = queries['queryMultipleValues'].input;
+    const parsedQuery = parser.parse(input);
 
     // console.log(JSON.stringify(parsedQuery, null, 2));
 
-    const expectedOutput: ParsedQuery = queries['queryMultipleValues'].expected;
+    const expectedOutput: IParsedQuery = queries['queryMultipleValues']
+      .expected as IParsedQuery;
 
-    expect(parsedQuery).toEqual(expectedOutput);
+    expectedOutput.root.position = {
+      start: 0,
+      end: input.length - 1,
+      tokenPositions: {},
+    };
+
+    const getPositions = (q: QueryNodeWithPosition) => {
+      if (isLogicalNodeWithPosition(q)) {
+        q.children.forEach(getPositions);
+      }
+
+      console.log(q.position);
+    };
+
+    getPositions(parsedQuery.root);
+
+    expect(parsedQuery).toMatchObject(expectedOutput);
   });
 });

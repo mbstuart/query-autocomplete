@@ -1,7 +1,7 @@
 import { ElementRef, EventEmitter, HostListener, Output } from '@angular/core';
 import { Directive } from '@angular/core';
 // tslint:disable-next-line: nx-enforce-module-boundaries
-import { ParsedQuery, Parser, Stringifier } from '@query-ac/parser';
+import { IParsedQuery, Parser, Stringifier } from '@query-ac/parser';
 
 @Directive({
   // tslint:disable-next-line: directive-selector
@@ -12,7 +12,7 @@ export class AutocompleteDirective {
 
   private stringifier: Stringifier;
 
-  @Output() query = new EventEmitter<ParsedQuery>();
+  @Output() query = new EventEmitter<IParsedQuery>();
 
   @HostListener('keydown') onKeyDown() {
     try {

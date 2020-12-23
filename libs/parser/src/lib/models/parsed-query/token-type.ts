@@ -7,6 +7,7 @@ export enum TokenTypes {
   LogicalStart,
   LogicalOperator,
   LogicalEnd,
+  LogicalComponent,
 }
 
 export type TokenType = keyof typeof TokenTypes;

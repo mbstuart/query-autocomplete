@@ -1,11 +1,13 @@
-import { ParsedQuery } from '../models';
+import { Query } from '../models';
 import { Stringifier } from './stringifier';
 describe('Stringifier', () => {
   let stringifier: Stringifier;
 
   //#region Queries
 
-  const queries: { [key: string]: { input: string; expected: ParsedQuery } } = {
+  const queries: {
+    [key: string]: { input: string; expected: Query };
+  } = {
     query1: {
       input: '(region IN [Europe] OR value < 30) AND sector IN [Pharma]',
       expected: {

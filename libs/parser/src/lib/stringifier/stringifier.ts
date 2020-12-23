@@ -1,9 +1,9 @@
-import { AtomicNode, LogicalNode, ParsedQuery, QueryNode } from '../models';
+import { AtomicNode, LogicalNode, Query, QueryNode } from '../models';
 import { DefaultOperators, Operator } from '../operators';
 import { ParserOptions } from '../parser';
 
 export interface IStringifier {
-  stringify(query: ParsedQuery): string;
+  stringify(query: Query): string;
 }
 
 export class Stringifier implements IStringifier {
@@ -26,7 +26,7 @@ export class Stringifier implements IStringifier {
     this.operators = this.invertOperatorDictionary(operators);
   }
 
-  stringify(query: ParsedQuery): string {
+  stringify(query: Query): string {
     const { root } = query;
 
     return this.stringifyQuery(root, true);

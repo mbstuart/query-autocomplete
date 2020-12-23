@@ -2,9 +2,15 @@ import {
   AtomicNode,
   LogicalNode,
   OperatorType,
-  ParsedQuery,
+  IParsedQuery,
   QueryNode,
+  QueryNodeWithPosition,
+  NodePosition,
+  ParsedQuery,
+  LogicalNodeWithPosition,
+  AtomicNodeWithPosition,
 } from '../models';
+import { QueryToken } from '../models/parsed-query/query-token';
 import { DefaultOperators } from '../operators/default-operators';
 import { Operator } from '../operators/operator';
 
@@ -12,8 +18,14 @@ const REGEX_PATTERNS = {
   BRACKETED: /\((.+)\)/,
 };
 
+const LOGICAL_OPERATORS = {
+  AND: ' AND ',
+  OR: ' OR ',
+  NOT: 'NOT',
+};
+
 export interface IParser {
-  parse(queryString: string): ParsedQuery;
+  parse(queryString: string): IParsedQuery;
 }
 
 export interface ParserOptions {
@@ -36,12 +48,12 @@ export class Parser implements IParser {
     }
   }
 
-  parse(queryString: string): ParsedQuery {
+  parse(queryString: string): IParsedQuery {
     const preppedString = this.prepareString(queryString);
 
-    const parsed: ParsedQuery = {
-      root: this.splitByBrackets(preppedString),
-    };
+    const parsed: IParsedQuery = new ParsedQuery();
+
+    parsed.root = this.splitByBrackets(queryString, {}, 0);
 
     return parsed;
   }
@@ -56,55 +68,78 @@ export class Parser implements IParser {
 
   private splitByBrackets(
     queryString: string,
-    queryCache?: { [placeholder: string]: QueryNode }
+    queryCache: { [placeholder: string]: QueryNodeWithPosition },
+    start
   ) {
-    if (!queryCache) {
-      queryCache = {};
-    }
-
     let res = REGEX_PATTERNS.BRACKETED.exec(queryString);
 
     let found: string;
 
     while ((found = res && res[1])) {
-      const parsed = this.splitByBrackets(found);
-      const placeholder = this.createPlaceholderId();
+      const parsed = this.splitByBrackets(found, queryCache, res.index);
+      const placeholder = this.createPlaceholderId(res[0].length);
       queryCache[placeholder] = parsed;
       queryString = queryString.replace(res[0], placeholder);
       res = REGEX_PATTERNS.BRACKETED.exec(queryString);
     }
 
-    return this.parseLogicalStatement(queryString, queryCache);
+    const statementParsed = this.parseLogicalStatement(
+      queryString,
+      queryCache,
+      start
+    );
+    statementParsed.position.end += 2;
+
+    return statementParsed;
   }
 
-  private createPlaceholderId() {
-    return `placeholder-${Math.random().toString(36).slice(-5)}`;
+  private createPlaceholderId(length: number) {
+    const placeholder = `placeholder-${(
+      Math.random() * Math.pow(10, length)
+    ).toString(16)}`.substring(0, length);
+
+    if (placeholder.length !== length) {
+      throw Error('Placeholder created incorrectly!');
+    }
+
+    return placeholder;
   }
 
   private parseLogicalStatement(
     queryFragment: string,
-    queryCache: { [placeholder: string]: QueryNode }
-  ): QueryNode {
-    const orSplit = queryFragment.split(' OR ');
+    queryCache: { [placeholder: string]: QueryNodeWithPosition },
+    start: number
+  ): QueryNodeWithPosition {
+    const orSplit = queryFragment.split(LOGICAL_OPERATORS.OR);
 
-    const andSplit = orSplit.map((frag) => frag.split(' AND '));
+    const andSplit = orSplit.map((frag) => frag.split(LOGICAL_OPERATORS.AND));
 
-    const unpacked = andSplit.map((subs) =>
-      subs.map((subString) => {
+    let position = start;
+
+    const unpacked: QueryNodeWithPosition[][] = andSplit.map((subs) => {
+      const andStatement = subs.map((subString) => {
+        let val: QueryNodeWithPosition;
         if (queryCache[subString]) {
-          return queryCache[subString];
+          val = queryCache[subString];
+          position += 2;
         } else {
-          return this.parseAtomicStatement(subString);
+          val = this.parseAtomicStatement(subString, position);
         }
-      })
-    );
+        position += subString.length;
+        return val;
+      });
+
+      position += LOGICAL_OPERATORS.AND.length;
+
+      return andStatement;
+    });
 
     if (unpacked.length === 1 && unpacked[0].length === 1) {
       return unpacked[0][0];
     } else {
-      const andsCollected: QueryNode[] = unpacked.reduce(
-        (nodes: QueryNode[], ands) => {
-          let val: QueryNode;
+      const andsCollected: QueryNodeWithPosition[] = unpacked.reduce(
+        (nodes: QueryNodeWithPosition[], ands) => {
+          let val: QueryNodeWithPosition;
 
           if (ands.length === 1) {
             val = ands[0];
@@ -112,6 +147,7 @@ export class Parser implements IParser {
             val = {
               logicalConnector: 'AND',
               children: ands,
+              position: this.getPositionsFromChildElements(ands, val),
             };
           }
 
@@ -126,13 +162,14 @@ export class Parser implements IParser {
         return andsCollected[0];
       }
 
-      const orNode: LogicalNode = {
+      const orNode: LogicalNodeWithPosition = {
         logicalConnector: 'OR',
         children: [],
+        position: null,
       };
 
-      const orsCollected: QueryNode = andsCollected.reduce(
-        (agg: LogicalNode, ands) => {
+      const orsCollected: QueryNodeWithPosition = andsCollected.reduce(
+        (agg: LogicalNodeWithPosition, ands) => {
           agg.children.push(ands);
 
           return agg;
@@ -140,11 +177,19 @@ export class Parser implements IParser {
         orNode
       );
 
+      orNode.position = this.getPositionsFromChildElements(
+        orNode.children,
+        orNode
+      );
+
       return orsCollected;
     }
   }
 
-  private parseAtomicStatement(atomicFragment: string): AtomicNode {
+  private parseAtomicStatement(
+    atomicFragment: string,
+    start: number
+  ): AtomicNodeWithPosition {
     const split = atomicFragment.split(' ');
 
     const [property, operatorKey, ...values] = split;
@@ -152,16 +197,82 @@ export class Parser implements IParser {
     const operator = this.operators[operatorKey];
 
     if (!operator) {
-      console.log(atomicFragment);
+      console.error(atomicFragment);
       throw Error(`No operator found for key '${operatorKey}'`);
     }
 
     const parsedValues = operator.valueParser(values.join(' '));
 
-    return {
+    const node: AtomicNode = {
       operator: operator.key as OperatorType,
       values: parsedValues,
       property,
+    };
+
+    return {
+      ...node,
+      position: {
+        start,
+        end: start + atomicFragment.length,
+        tokenPositions: {
+          [start]: {
+            type: 'AtomicProperty',
+            node,
+          },
+          [start + property.length + 1]: {
+            type: 'AtomicOperator',
+            node,
+          },
+          [start + property.length + 1 + operatorKey.length + 1]: {
+            type: 'AtomicValue',
+            node,
+          },
+        },
+      },
+    };
+  }
+
+  private getPositionsFromChildElements(
+    children: QueryNodeWithPosition[],
+    parentNode: QueryNode
+  ) {
+    const start = children[0].position.start;
+    const end = children[children.length - 1].position.end;
+
+    let positions: { [index: number]: QueryToken } = {
+      [start]: {
+        type: 'LogicalStart',
+        node: parentNode,
+      },
+      [end]: {
+        type: 'LogicalEnd',
+        node: parentNode,
+      },
+    };
+
+    positions = children.reduce((pos, child, i, arr) => {
+      const updated: { [index: number]: QueryToken } = {
+        ...pos,
+        [child.position.start]: {
+          type: 'LogicalComponent',
+          node: child as QueryNode,
+        },
+      };
+
+      if (arr.length - 1 !== i) {
+        updated[child.position.end] = {
+          type: 'LogicalOperator',
+          node: parentNode,
+        };
+      }
+
+      return updated;
+    }, positions);
+
+    return {
+      start,
+      end,
+      tokenPositions: positions,
     };
   }
 }
