@@ -1,6 +1,6 @@
 <div class="test-container">
   <div class="input-container">
-    <input queryac (query)="queryUpdated($event)" type="text">
+    <input queryac (position)="positionUpdated($event)" (query)="queryUpdated($event)" type="text">
   </div>
   <div class="output-container">
     <textarea [ngModel]="query" name="" id="" cols="30" rows="10"></textarea>

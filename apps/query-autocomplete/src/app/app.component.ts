@@ -12,4 +12,8 @@ export class AppComponent {
   public queryUpdated(query: IParsedQuery) {
     this.query = JSON.stringify(query, null, 2);
   }
+
+  public positionUpdated(pos: any) {
+    console.info(JSON.stringify(pos, null, 2));
+  }
 }

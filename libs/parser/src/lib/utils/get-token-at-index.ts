@@ -28,7 +28,9 @@ const checkDeepestContainer: (
 };
 
 export function getTokenAtIndex(index: number, q: ParsedQuery) {
-  if (!(index < q.root.position.end && index > q.root.position.start)) {
+  index = Math.min(q.root.position.end, index);
+
+  if (!(index <= q.root.position.end && index >= q.root.position.start)) {
     throw Error(
       `index ${index} out of range (${q.root.position.start} - ${q.root.position.end})`
     );

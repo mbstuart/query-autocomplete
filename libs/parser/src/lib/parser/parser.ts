@@ -196,11 +196,32 @@ export class Parser implements IParser {
 
     const [property, operatorKey, ...values] = split;
 
-    const operator = this.operators[operatorKey];
+    const operator = this.operators[operatorKey && operatorKey.toUpperCase()];
 
     if (!operator) {
-      console.error(atomicFragment);
-      throw Error(`No operator found for key '${operatorKey}'`);
+      const node: AtomicNodeWithPosition = {
+        property,
+        values: null,
+        operator: null,
+        position: null,
+      };
+
+      node.position = {
+        start,
+        end: start + atomicFragment.length,
+        tokenPositions: {
+          [start]: {
+            type: 'AtomicProperty',
+            node,
+          },
+          [start + property.length + 1]: {
+            type: 'AtomicOperator',
+            node,
+          },
+        },
+      };
+
+      return node;
     }
 
     const parsedValues = operator.valueParser(values.join(' '));
