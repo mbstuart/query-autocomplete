@@ -1,9 +1,8 @@
-import { AtomicNode } from './atomic-node';
 import { LogicalConnector } from './logical-connectors';
 import { QueryNode } from './query-node';
 
-export interface LogicalNode {
+export interface LogicalNode<T extends QueryNode = QueryNode> {
   logicalConnector: LogicalConnector;
 
-  children: QueryNode[];
+  children: T[];
 }

@@ -1,1 +1,1 @@
-export * from './lib/autocomplete.module';
+export * from './lib';

@@ -1,5 +1,12 @@
-import { QueryNode } from "./query-node";
+import {
+  QueryNode,
+  QueryNodeWithPlacement as QueryNodeWithPosition,
+} from './query-node';
+
+export interface Query {
+  root: QueryNode;
+}
 
 export interface ParsedQuery {
-    root: QueryNode;
+  root: QueryNodeWithPosition;
 }
