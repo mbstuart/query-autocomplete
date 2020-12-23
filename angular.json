@@ -20,9 +20,7 @@
               "apps/query-autocomplete/src/favicon.ico",
               "apps/query-autocomplete/src/assets"
             ],
-            "styles": [
-              "apps/query-autocomplete/src/styles.scss"
-            ],
+            "styles": ["apps/query-autocomplete/src/styles.scss"],
             "scripts": []
           },
           "configurations": {
@@ -80,17 +78,12 @@
               "apps/query-autocomplete/tsconfig.spec.json",
               "apps/query-autocomplete/tsconfig.editor.json"
             ],
-            "exclude": [
-              "**/node_modules/**",
-              "!apps/query-autocomplete/**/*"
-            ]
+            "exclude": ["**/node_modules/**", "!apps/query-autocomplete/**/*"]
           }
         },
         "test": {
           "builder": "@nrwl/jest:jest",
-          "outputs": [
-            "coverage/apps/query-autocomplete"
-          ],
+          "outputs": ["coverage/apps/query-autocomplete"],
           "options": {
             "jestConfig": "apps/query-autocomplete/jest.config.js",
             "passWithNoTests": true
@@ -110,19 +103,52 @@
               "libs/parser/tsconfig.lib.json",
               "libs/parser/tsconfig.spec.json"
             ],
-            "exclude": [
-              "**/node_modules/**",
-              "!libs/parser/**/*"
-            ]
+            "exclude": ["**/node_modules/**", "!libs/parser/**/*"]
           }
         },
         "test": {
           "builder": "@nrwl/jest:jest",
-          "outputs": [
-            "coverage/libs/parser"
-          ],
+          "outputs": ["coverage/libs/parser"],
           "options": {
             "jestConfig": "libs/parser/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
+    },
+    "autocomplete": {
+      "projectType": "library",
+      "root": "libs/autocomplete",
+      "sourceRoot": "libs/autocomplete/src",
+      "prefix": "query-autocomplete",
+      "architect": {
+        "build": {
+          "builder": "@nrwl/angular:package",
+          "options": {
+            "tsConfig": "libs/autocomplete/tsconfig.lib.json",
+            "project": "libs/autocomplete/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "libs/autocomplete/tsconfig.lib.prod.json"
+            }
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "libs/autocomplete/tsconfig.lib.json",
+              "libs/autocomplete/tsconfig.spec.json"
+            ],
+            "exclude": ["**/node_modules/**", "!libs/autocomplete/**/*"]
+          }
+        },
+        "test": {
+          "builder": "@nrwl/jest:jest",
+          "outputs": ["coverage/libs/autocomplete"],
+          "options": {
+            "jestConfig": "libs/autocomplete/jest.config.js",
             "passWithNoTests": true
           }
         }

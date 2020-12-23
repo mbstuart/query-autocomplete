@@ -68,7 +68,7 @@ describe('Stringifier', () => {
     },
     queryMultipleValues: {
       input:
-        '(region IN ["Asia Minor", "Europe"] OR value < 30) AND sector IS Pharma',
+        '(region IN ["Asia Minor", Europe] OR value < 30) AND sector IN [Pharma]',
       expected: {
         root: {
           logicalConnector: 'AND',
@@ -113,12 +113,24 @@ describe('Stringifier', () => {
     expect(stringifier.stringify).toBeTruthy();
   });
 
-  it('should return parsed object from string', () => {
+  it('should stringify query correctly', () => {
     const parsedQuery = stringifier.stringify(queries['query1'].expected);
 
     // console.log(JSON.stringify(parsedQuery, null, 2));
 
     const expectedOutput: string = queries['query1'].input;
+
+    expect(parsedQuery).toEqual(expectedOutput);
+  });
+
+  it('should stringify multiple vals query correctly', () => {
+    const parsedQuery = stringifier.stringify(
+      queries['queryMultipleValues'].expected
+    );
+
+    // console.log(JSON.stringify(parsedQuery, null, 2));
+
+    const expectedOutput: string = queries['queryMultipleValues'].input;
 
     expect(parsedQuery).toEqual(expectedOutput);
   });
