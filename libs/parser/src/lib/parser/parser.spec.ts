@@ -165,15 +165,15 @@ describe('parser', () => {
       tokenPositions: {},
     };
 
-    const getPositions = (q: QueryNodeWithPosition) => {
-      if (isLogicalNodeWithPosition(q)) {
-        q.children.forEach(getPositions);
-      }
+    // const getPositions = (q: QueryNodeWithPosition) => {
+    //   if (isLogicalNodeWithPosition(q)) {
+    //     q.children.forEach(getPositions);
+    //   }
 
-      console.log(q.position);
-    };
+    //   console.log(q.position);
+    // };
 
-    getPositions(parsedQuery.root);
+    // getPositions(parsedQuery.root);
 
     expect(parsedQuery).toMatchObject(expectedOutput);
   });

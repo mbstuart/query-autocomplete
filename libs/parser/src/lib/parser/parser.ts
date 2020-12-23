@@ -147,8 +147,10 @@ export class Parser implements IParser {
             val = {
               logicalConnector: 'AND',
               children: ands,
-              position: this.getPositionsFromChildElements(ands, val),
+              position: null,
             };
+
+            val.position = this.getPositionsFromChildElements(ands, val);
           }
 
           nodes.push(val);
@@ -203,38 +205,38 @@ export class Parser implements IParser {
 
     const parsedValues = operator.valueParser(values.join(' '));
 
-    const node: AtomicNode = {
+    const node: AtomicNodeWithPosition = {
       operator: operator.key as OperatorType,
       values: parsedValues,
       property,
+      position: null,
     };
 
-    return {
-      ...node,
-      position: {
-        start,
-        end: start + atomicFragment.length,
-        tokenPositions: {
-          [start]: {
-            type: 'AtomicProperty',
-            node,
-          },
-          [start + property.length + 1]: {
-            type: 'AtomicOperator',
-            node,
-          },
-          [start + property.length + 1 + operatorKey.length + 1]: {
-            type: 'AtomicValue',
-            node,
-          },
+    node.position = {
+      start,
+      end: start + atomicFragment.length,
+      tokenPositions: {
+        [start]: {
+          type: 'AtomicProperty',
+          node,
+        },
+        [start + property.length + 1]: {
+          type: 'AtomicOperator',
+          node,
+        },
+        [start + property.length + 1 + operatorKey.length + 1]: {
+          type: 'AtomicValue',
+          node,
         },
       },
     };
+
+    return node;
   }
 
   private getPositionsFromChildElements(
     children: QueryNodeWithPosition[],
-    parentNode: QueryNode
+    parentNode: QueryNodeWithPosition
   ) {
     const start = children[0].position.start;
     const end = children[children.length - 1].position.end;
@@ -255,7 +257,7 @@ export class Parser implements IParser {
         ...pos,
         [child.position.start]: {
           type: 'LogicalComponent',
-          node: child as QueryNode,
+          node: child,
         },
       };
 
