@@ -22,10 +22,17 @@ export class SuggestionsComponent {
 
   @Output() suggestionSelected = new EventEmitter<Suggestion>();
 
-  @HostListener('keypress', ['$event']) onKeyPress(keyEvent: KeyboardEvent) {
+  @HostListener('keydown', ['$event']) onKeyPress(keyEvent: KeyboardEvent) {
+    console.log(keyEvent.key);
     switch (keyEvent.key) {
       case 'Enter':
         this.suggestionSelected.emit(this.getSelected());
+        break;
+      case 'ArrowUp':
+        this.tab('previous');
+        break;
+      case 'ArrowDown':
+        this.tab('next');
         break;
       default:
         break;
@@ -37,10 +44,30 @@ export class SuggestionsComponent {
     @Inject(DOCUMENT) private document: Document
   ) {}
 
-  public tab() {
+  public tab(opt: 'first' | 'next' | 'previous' = 'first') {
     const htmlRoot: HTMLElement = this.el.nativeElement;
 
-    const option: HTMLDivElement = htmlRoot.querySelector('.suggestion');
+    const options: NodeListOf<HTMLElement> = htmlRoot.querySelectorAll(
+      '.suggestion'
+    );
+
+    let option: HTMLElement;
+
+    const current = Array.from(options).findIndex(
+      (el) => el === this.document.activeElement
+    );
+
+    switch (opt) {
+      case 'first':
+        option = options[0];
+        break;
+      case 'next':
+        option = options[current + 1];
+        break;
+      case 'previous':
+        option = options[current - 1];
+        break;
+    }
 
     option.focus();
   }

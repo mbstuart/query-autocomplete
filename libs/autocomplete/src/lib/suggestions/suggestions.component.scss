@@ -6,8 +6,10 @@
 
 .suggestion {
   padding: 5px;
-  :focus {
-    background-color: gainsboro;
+  &:focus {
+    border: none;
+    outline: none;
+    background-color: lightgrey;
   }
 }
 
