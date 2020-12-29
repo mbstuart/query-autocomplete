@@ -4,7 +4,10 @@ import { QueryToken } from '../models/parsed-query/query-token';
 const getTokenIndex: (
   index: number,
   q: { position: NodePosition }
-) => string = (index: number, { position }: { position: NodePosition }) => {
+) => { start: number; end: number } = (
+  index: number,
+  { position }: { position: NodePosition }
+) => {
   const positions = Object.keys(position.tokenPositions).sort(
     (a: string, b: string) => +a - +b
   );
@@ -15,8 +18,11 @@ const getTokenIndex: (
 
   const el =
     highestIndex === -1
-      ? positions[positions.length - 1]
-      : positions[highestIndex - 1];
+      ? { start: +positions[positions.length - 1], end: position.end }
+      : {
+          start: +positions[highestIndex - 1],
+          end: +positions[highestIndex] - 1,
+        };
 
   return el;
 };
@@ -27,7 +33,7 @@ const checkDeepestContainer: (
 ) => QueryToken = (index: number, { position }: { position: NodePosition }) => {
   const el = getTokenIndex(index, { position });
 
-  const token: QueryToken = position.tokenPositions[el];
+  const token: QueryToken = position.tokenPositions[el.start];
 
   if (token && token.type === 'LogicalComponent') {
     return checkDeepestContainer(index, token.node);

@@ -13,6 +13,7 @@ import {
   getTokenStartAtIndex,
   suggestNextTokenType,
 } from '../utils';
+import { map } from 'rxjs/operators';
 
 export class AutocompleteSuggestions {
   private readonly propertiesArr: (Property & {
@@ -34,8 +35,13 @@ export class AutocompleteSuggestions {
     try {
       let tokenType = token.type;
 
+      let searchText = null;
+
       if (position > token.node.position.end + 1) {
         tokenType = suggestNextTokenType(token)[0];
+      } else {
+        const { start, end } = getTokenStartAtIndex(position, token.node);
+        searchText = (text.substring(start, end) || '').toUpperCase();
       }
 
       let property = null;
@@ -48,6 +54,7 @@ export class AutocompleteSuggestions {
 
       const getOptions = this.getOptionsForTokenType(tokenType, property, {
         maxOptions: 10,
+        searchText,
       });
 
       return getOptions;
@@ -63,7 +70,7 @@ export class AutocompleteSuggestions {
     suggestion: Suggestion,
     sentence: string
   ) {
-    const start = +getTokenStartAtIndex(position, token.node);
+    const { start } = getTokenStartAtIndex(position, token.node);
 
     const trimmedSentence =
       suggestion.type === 'LogicalOperator'
@@ -92,7 +99,9 @@ export class AutocompleteSuggestions {
           : of([]);
 
       case 'AtomicValue':
-        return property.options;
+        return property
+          .getOptions(params.searchText)
+          .pipe(map((res) => res.options));
 
       case 'AtomicProperty':
         const properties = this.propertiesArr

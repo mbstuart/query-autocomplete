@@ -5,7 +5,7 @@ import { Suggestion } from '../../suggestion';
 import { Property } from '../property';
 
 export class ListProperty implements Property {
-  public readonly options: Observable<Suggestion[]> = null;
+  public readonly options: Suggestion[] = null;
 
   public readonly operators = ['IN', 'IS'] as OperatorType[];
 
@@ -14,6 +14,17 @@ export class ListProperty implements Property {
     public name: string,
     options: { id: string; name: string }[]
   ) {
-    this.options = of(options.map((opt) => ({ ...opt, type: 'AtomicValue' })));
+    this.options = options.map((opt) => ({ ...opt, type: 'AtomicValue' }));
   }
+
+  public getOptions = (searchString: string) => {
+    return of({
+      optionType: 'list' as any,
+      options: this.options.filter(
+        (opt) =>
+          opt.id.toUpperCase().includes(searchString) ||
+          opt.name.toUpperCase().includes(searchString)
+      ),
+    });
+  };
 }

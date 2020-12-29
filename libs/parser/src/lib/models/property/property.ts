@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 import { OperatorType } from '../parsed-query/operators';
-import { Suggestion } from '../suggestion';
+import { SuggestionOptionResponse } from '../suggestion';
 
 export interface Property {
   id: string;
@@ -9,5 +9,5 @@ export interface Property {
 
   operators: OperatorType[];
 
-  options: Observable<Suggestion[]>;
+  getOptions: (searchText: string) => Observable<SuggestionOptionResponse>;
 }
