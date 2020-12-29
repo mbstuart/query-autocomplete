@@ -1,0 +1,12 @@
+.suggestions-container {
+  padding: 5px;
+  border: thin black solid;
+  width: fit-content;
+}
+
+.suggestion {
+  padding: 5px;
+  :focus {
+    background-color: gainsboro;
+  }
+}

@@ -1,0 +1,8 @@
+<div class="suggestions-container" >
+    <div (click)="select(suggestion)" [attr.suggestionid]="suggestion.id" class="suggestion" [tabIndex]="i+1" *ngFor="let suggestion of suggestions; let i = index" >
+        <a >
+            {{suggestion.name}}
+
+        </a>
+    </div>
+</div>

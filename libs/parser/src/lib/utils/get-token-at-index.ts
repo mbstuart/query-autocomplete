@@ -1,16 +1,16 @@
-import { ParsedQuery, QueryNodeWithPosition } from '../models';
+import { NodePosition } from '../models';
 import { QueryToken } from '../models/parsed-query/query-token';
 
-const checkDeepestContainer: (
+const getTokenIndex: (
   index: number,
-  q: QueryNodeWithPosition
-) => QueryToken = (index: number, q: QueryNodeWithPosition) => {
-  const positions = Object.keys(q.position.tokenPositions).sort(
+  q: { position: NodePosition }
+) => string = (index: number, { position }: { position: NodePosition }) => {
+  const positions = Object.keys(position.tokenPositions).sort(
     (a: string, b: string) => +a - +b
   );
 
   const highestIndex = positions.findIndex((pos) => {
-    return +pos >= index;
+    return +pos > index;
   });
 
   const el =
@@ -18,23 +18,50 @@ const checkDeepestContainer: (
       ? positions[positions.length - 1]
       : positions[highestIndex - 1];
 
-  const token: QueryToken = q.position.tokenPositions[el];
+  return el;
+};
 
-  if (token.type === 'LogicalComponent') {
+const checkDeepestContainer: (
+  index: number,
+  q: { position: NodePosition }
+) => QueryToken = (index: number, { position }: { position: NodePosition }) => {
+  const el = getTokenIndex(index, { position });
+
+  const token: QueryToken = position.tokenPositions[el];
+
+  if (token && token.type === 'LogicalComponent') {
     return checkDeepestContainer(index, token.node);
   }
 
   return token;
 };
 
-export function getTokenAtIndex(index: number, q: ParsedQuery) {
-  index = Math.min(q.root.position.end, index);
+export function getTokenAtIndex(
+  index: number,
+  { position }: { position: NodePosition }
+) {
+  index = Math.min(position.end, index);
 
-  if (!(index <= q.root.position.end && index >= q.root.position.start)) {
+  if (!(index <= position.end && index >= position.start)) {
     throw Error(
-      `index ${index} out of range (${q.root.position.start} - ${q.root.position.end})`
+      `index ${index} out of range (${position.start} - ${position.end})`
     );
   }
 
-  return checkDeepestContainer(index, q.root);
+  return checkDeepestContainer(index, { position });
+}
+
+export function getTokenStartAtIndex(
+  index: number,
+  { position }: { position: NodePosition }
+) {
+  index = Math.min(position.end, index);
+
+  if (!(index <= position.end && index >= position.start)) {
+    throw Error(
+      `index ${index} out of range (${position.start} - ${position.end})`
+    );
+  }
+
+  return getTokenIndex(index, { position });
 }

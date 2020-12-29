@@ -14,6 +14,6 @@ export class AppComponent {
   }
 
   public positionUpdated(pos: any) {
-    console.info(JSON.stringify(pos, null, 2));
+    // console.info(JSON.stringify(pos, null, 2));
   }
 }
