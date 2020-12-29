@@ -11,7 +11,6 @@ describe('parser', () => {
   let parser: Parser;
 
   //#region Queries
-
   const queries: {
     [key: string]: { input: string; expected: Query };
   } = {
@@ -204,9 +203,6 @@ describe('parser', () => {
     // };
 
     // getPositions(parsedQuery.root);
-    console.log(input);
-
-    console.log(JSON.stringify(parsedQuery.toPrintable(), null, 2));
 
     expect(parsedQuery).toMatchObject(expectedOutput);
   });

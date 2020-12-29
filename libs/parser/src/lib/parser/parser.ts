@@ -16,8 +16,9 @@ import { DefaultOperators } from '../operators/default-operators';
 import { Operator } from '../operators/operator';
 
 function trimLeft(string) {
-  const first = [...string].findIndex((char) => char !== ' ');
-  return string.substring(first, string.length);
+  const trimmed = (string + '$').trim();
+
+  return trimmed.substring(0, trimmed.length - 1);
 }
 
 function randomString(len: number, charSet?: string) {
@@ -103,7 +104,7 @@ export class Parser implements IParser {
           (substitutes[node.property] &&
             substitutes[node.property].substr(1, node.property.length - 2)) ||
           node.property;
-        node.values = node.values.map(
+        node.values = (node.values || []).map(
           (value) =>
             (substitutes[value] &&
               substitutes[value].substr(1, value.toString().length - 2)) ||
@@ -156,7 +157,6 @@ export class Parser implements IParser {
       queryString = queryString.replace(res[0], placeholder);
       res = REGEX_PATTERNS.BRACKETED.exec(queryString);
     }
-    console.log(queryString);
     const statementParsed = this.parseLogicalStatement(
       queryString,
       queryCache,
@@ -287,7 +287,7 @@ export class Parser implements IParser {
     const [property, operatorKey, ...values] = split;
 
     const lastValueIndex =
-      values[0][0] === '['
+      values && values[0] && values[0][0] === '['
         ? values.findIndex((val) => val[val.length - 1] === ']')
         : 0;
 
@@ -296,9 +296,34 @@ export class Parser implements IParser {
         ? values[values.length - 1]
         : values[lastValueIndex];
 
-    const end = lastValue
-      ? start + atomicFragment.indexOf(lastValue) + lastValue.length
-      : start + atomicFragment.length;
+    const end = Math.max(
+      lastValue
+        ? start + atomicFragment.indexOf(lastValue) + lastValue.length - 1
+        : start + atomicFragment.length,
+      start
+    );
+
+    if (!operatorKey) {
+      const node: AtomicNodeWithPosition = {
+        property,
+        values: null,
+        operator: null,
+        position: null,
+      };
+
+      node.position = {
+        start,
+        end: end,
+        tokenPositions: {
+          [start]: {
+            type: 'AtomicProperty',
+            node,
+          },
+        },
+      };
+
+      return node;
+    }
 
     const operator = this.operators[operatorKey && operatorKey.toUpperCase()];
 
@@ -312,7 +337,7 @@ export class Parser implements IParser {
 
       node.position = {
         start,
-        length: start + atomicFragment.length,
+        end: end,
         tokenPositions: {
           [start]: {
             type: 'AtomicProperty',

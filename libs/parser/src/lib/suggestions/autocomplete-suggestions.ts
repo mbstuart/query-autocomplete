@@ -34,7 +34,7 @@ export class AutocompleteSuggestions {
     try {
       let tokenType = token.type;
 
-      if (position >= token.node.position.end) {
+      if (position > token.node.position.end + 1) {
         tokenType = suggestNextTokenType(token)[0];
       }
 
@@ -67,10 +67,10 @@ export class AutocompleteSuggestions {
 
     const trimmedSentence =
       suggestion.type === 'LogicalOperator'
-        ? sentence.substring(0, sentence.lastIndexOf(' ') + 1)
-        : sentence.substring(0, start);
+        ? sentence.substring(0, sentence.lastIndexOf(' '))
+        : sentence.substring(0, start).trim();
 
-    return `${trimmedSentence}${suggestion.id} `;
+    return `${`${trimmedSentence} ${suggestion.id}`.trim()} `;
   }
 
   private getOptionsForTokenType(
@@ -82,7 +82,7 @@ export class AutocompleteSuggestions {
       case 'LogicalOperator':
         return of(
           Object.keys(LogicalConnectors)
-            .filter((key: any) => +key !== key)
+            .filter((key: string) => isNaN(+key))
             .map((id) => ({ id, name: id, type }))
         );
 
