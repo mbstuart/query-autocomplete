@@ -106,6 +106,36 @@ describe('parser', () => {
         },
       },
     },
+    queryQuotedValues: {
+      input: '(region IS "THIS AND THAT" OR value < 30) AND sector IS Pharma',
+      expected: {
+        root: {
+          logicalConnector: 'AND',
+          children: [
+            {
+              logicalConnector: 'OR',
+              children: [
+                {
+                  property: 'region',
+                  operator: 'IN',
+                  values: ['THIS AND THAT'],
+                },
+                {
+                  property: 'value',
+                  operator: 'LT',
+                  values: [30],
+                },
+              ],
+            },
+            {
+              property: 'sector',
+              operator: 'IN',
+              values: ['Pharma'],
+            },
+          ],
+        },
+      },
+    },
   };
 
   //#endregion
@@ -147,7 +177,7 @@ describe('parser', () => {
 
     const expectedOutput: Query = queries['queryMultipleValues'].expected;
 
-    expect(parsedQuery).toEqual(expectedOutput);
+    expect(parsedQuery).toMatchObject(expectedOutput);
   });
 
   it('should be able to correctly parse positions', () => {
@@ -174,6 +204,19 @@ describe('parser', () => {
     // };
 
     // getPositions(parsedQuery.root);
+    console.log(input);
+
+    console.log(JSON.stringify(parsedQuery.toPrintable(), null, 2));
+
+    expect(parsedQuery).toMatchObject(expectedOutput);
+  });
+
+  it('should be able to handle quoted out values', () => {
+    const parsedQuery = parser
+      .parse(queries['queryQuotedValues'].input)
+      .toQuery();
+
+    const expectedOutput: Query = queries['queryQuotedValues'].expected;
 
     expect(parsedQuery).toMatchObject(expectedOutput);
   });

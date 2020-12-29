@@ -31,8 +31,6 @@ describe('get-token-at-index', () => {
       if (isLogicalNodeWithPosition(q)) {
         q.children.forEach(getPositions);
       }
-
-      console.log(q.position);
     };
 
     // getPositions(parsedQuery.root);

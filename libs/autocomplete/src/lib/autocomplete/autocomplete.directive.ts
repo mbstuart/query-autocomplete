@@ -90,6 +90,12 @@ export class AutocompleteDirective {
       distinctUntilChanged(),
       map((position) => {
         const token = getTokenAtIndex(position, this.parsed.root);
+        const suggestedNextTypes = suggestNextTokenType(token);
+        console.info(
+          `current type: ${
+            token.type
+          } \n suggested next types: ${suggestedNextTypes.join(',')}`
+        );
         return {
           index: position,
           type: token.type,
@@ -98,7 +104,7 @@ export class AutocompleteDirective {
             position: undefined,
           },
           token,
-          suggestedNextTypes: suggestNextTokenType(token),
+          suggestedNextTypes,
         };
       })
     );
@@ -164,7 +170,6 @@ export class AutocompleteDirective {
   }
 
   @HostListener('keydown', ['$event']) keydown(event: KeyboardEvent) {
-    console.log(event.key);
     switch (event.key) {
       case 'Tab':
         this.handleTab();
@@ -200,10 +205,10 @@ export class AutocompleteDirective {
               this.input.value
             );
             this.input.value = newSentence;
+            this.hideSuggestions();
           }),
           first(),
           finalize(() => {
-            this.hideSuggestions();
             this.input.focus();
             this.onInput();
           }),
@@ -231,6 +236,10 @@ export class AutocompleteDirective {
     return this.suggestions.suggest(index, token).pipe(
       tap((suggestions) => {
         this.showSuggestions(suggestions);
+      }),
+      catchError((err) => {
+        console.error(err);
+        return of([]);
       })
     );
   }

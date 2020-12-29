@@ -2,6 +2,7 @@ export enum TokenTypes {
   AtomicProperty,
   AtomicOperator,
   AtomicValue,
+  AtomicValueIncomplete,
   AtomicEnd,
   AtomicStart,
   LogicalStart,

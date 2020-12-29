@@ -8,7 +8,11 @@ import {
 } from '../models';
 import { QueryToken } from '../models/parsed-query/query-token';
 import { TokenType } from '../models/parsed-query/token-type';
-import { getTokenAtIndex, getTokenStartAtIndex } from '../utils';
+import {
+  getTokenAtIndex,
+  getTokenStartAtIndex,
+  suggestNextTokenType,
+} from '../utils';
 
 export class AutocompleteSuggestions {
   private readonly propertiesArr: (Property & {
@@ -27,25 +31,30 @@ export class AutocompleteSuggestions {
   }
 
   public suggest(position: number, token: QueryToken) {
-    let tokenType = token.type;
+    try {
+      let tokenType = token.type;
 
-    // if (position >= token.node.position.end) {
-    //   tokenType = suggestNextTokenType(token)[0];
-    // }
-
-    let property = null;
-
-    if (!isLogicalNodeWithPosition(token.node)) {
-      if (token.node.property) {
-        property = this.properties[token.node.property];
+      if (position >= token.node.position.end) {
+        tokenType = suggestNextTokenType(token)[0];
       }
+
+      let property = null;
+
+      if (!isLogicalNodeWithPosition(token.node)) {
+        if (token.node.property) {
+          property = this.properties[token.node.property];
+        }
+      }
+
+      const getOptions = this.getOptionsForTokenType(tokenType, property, {
+        maxOptions: 10,
+      });
+
+      return getOptions;
+    } catch (e) {
+      console.error(e);
+      return of([]);
     }
-
-    const getOptions = this.getOptionsForTokenType(tokenType, property, {
-      maxOptions: 10,
-    });
-
-    return getOptions;
   }
 
   public acceptSuggestion(
@@ -56,7 +65,12 @@ export class AutocompleteSuggestions {
   ) {
     const start = +getTokenStartAtIndex(position, token.node);
 
-    return `${sentence.substring(0, start)}${suggestion.id} `;
+    const trimmedSentence =
+      suggestion.type === 'LogicalOperator'
+        ? sentence.substring(0, sentence.lastIndexOf(' ') + 1)
+        : sentence.substring(0, start);
+
+    return `${trimmedSentence}${suggestion.id} `;
   }
 
   private getOptionsForTokenType(
@@ -67,20 +81,29 @@ export class AutocompleteSuggestions {
     switch (type) {
       case 'LogicalOperator':
         return of(
-          Object.keys(LogicalConnectors).map((id) => ({ id, name: id }))
+          Object.keys(LogicalConnectors)
+            .filter((key: any) => +key !== key)
+            .map((id) => ({ id, name: id, type }))
         );
+
+      case 'AtomicOperator':
+        return property
+          ? of(property.operators.map((id) => ({ id, name: id })))
+          : of([]);
 
       case 'AtomicValue':
         return property.options;
 
       case 'AtomicProperty':
-        const properties = this.propertiesArr.filter(
-          (prop) =>
-            !params ||
-            !params.searchText ||
-            prop.searchName.includes(params.searchText) ||
-            prop.searchId.includes(params.searchText)
-        );
+        const properties = this.propertiesArr
+          .filter(
+            (prop) =>
+              !params ||
+              !params.searchText ||
+              prop.searchName.includes(params.searchText) ||
+              prop.searchId.includes(params.searchText)
+          )
+          .map((prop) => ({ id: prop.id, name: prop.id, type }));
         //   .slice((params && params.maxOptions) || 10);
 
         return of(properties);

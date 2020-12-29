@@ -9,18 +9,36 @@ import {
   ParsedQuery,
   LogicalNodeWithPosition,
   AtomicNodeWithPosition,
+  isLogicalNodeWithPosition,
 } from '../models';
 import { QueryToken } from '../models/parsed-query/query-token';
 import { DefaultOperators } from '../operators/default-operators';
 import { Operator } from '../operators/operator';
 
+function trimLeft(string) {
+  const first = [...string].findIndex((char) => char !== ' ');
+  return string.substring(first, string.length);
+}
+
+function randomString(len: number, charSet?: string) {
+  charSet =
+    charSet || 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let output = '';
+  for (let i = 0; i < len; i++) {
+    const randomPoz = Math.floor(Math.random() * charSet.length);
+    output += charSet.substring(randomPoz, randomPoz + 1);
+  }
+  return output;
+}
+
 const REGEX_PATTERNS = {
   BRACKETED: /\((.+)\)/,
+  QUOTED_SUBSTRINGS: /"[^"]*"/gm,
 };
 
 const LOGICAL_OPERATORS = {
-  AND: ' AND ',
-  OR: ' OR ',
+  AND: ' AND',
+  OR: ' OR',
   NOT: 'NOT',
 };
 
@@ -49,15 +67,20 @@ export class Parser implements IParser {
   }
 
   parse(queryString: string): IParsedQuery {
-    const preppedString = this.prepareString(queryString);
+    // queryString = this.prepareString(queryString);
+
+    const { replacedString, substitutes } = this.replaceQuotedStringsWithTokens(
+      queryString
+    );
 
     const parsed: IParsedQuery = new ParsedQuery();
 
-    parsed.root = this.splitByBrackets(queryString, {}, 0);
+    parsed.root = this.splitByBrackets(replacedString, {}, 0);
+
+    this.replaceSubstitutedValues(parsed.root, substitutes);
 
     return parsed;
   }
-
   private prepareString(queryString: string) {
     let preppedString = queryString.trim();
 
@@ -66,45 +89,100 @@ export class Parser implements IParser {
     return preppedString;
   }
 
+  private replaceSubstitutedValues(
+    queryNode: QueryNodeWithPosition,
+    substitutes: { [substituted: string]: string }
+  ) {
+    const replaceSubstitutedValueRecursively = (
+      node: QueryNodeWithPosition
+    ) => {
+      if (isLogicalNodeWithPosition(node)) {
+        node.children.forEach(replaceSubstitutedValueRecursively);
+      } else {
+        node.property =
+          (substitutes[node.property] &&
+            substitutes[node.property].substr(1, node.property.length - 2)) ||
+          node.property;
+        node.values = node.values.map(
+          (value) =>
+            (substitutes[value] &&
+              substitutes[value].substr(1, value.toString().length - 2)) ||
+            value
+        );
+      }
+    };
+
+    replaceSubstitutedValueRecursively(queryNode);
+  }
+
+  private replaceQuotedStringsWithTokens(queryString: string) {
+    const substitutes: { [substituted: string]: string } = {};
+
+    const res = queryString.match(REGEX_PATTERNS.QUOTED_SUBSTRINGS) || [];
+
+    let replacedString = queryString;
+
+    res.forEach((matchedString) => {
+      const substituteId = this.createPlaceholderId(matchedString.length, '');
+      substitutes[substituteId] = matchedString;
+      replacedString = replacedString.replace(matchedString, substituteId);
+    });
+
+    return {
+      replacedString,
+      substitutes,
+    };
+  }
+
   private splitByBrackets(
     queryString: string,
     queryCache: { [placeholder: string]: QueryNodeWithPosition },
-    start
+    start,
+    bracketed?: boolean
   ) {
     let res = REGEX_PATTERNS.BRACKETED.exec(queryString);
 
     let found: string;
 
     while ((found = res && res[1])) {
-      const parsed = this.splitByBrackets(found, queryCache, res.index);
+      const parsed = this.splitByBrackets(
+        found,
+        queryCache,
+        res.index + 1,
+        true
+      );
       const placeholder = this.createPlaceholderId(res[0].length);
       queryCache[placeholder] = parsed;
       queryString = queryString.replace(res[0], placeholder);
       res = REGEX_PATTERNS.BRACKETED.exec(queryString);
     }
-
+    console.log(queryString);
     const statementParsed = this.parseLogicalStatement(
       queryString,
       queryCache,
       start
     );
-    statementParsed.position.end += 2;
+
+    if (bracketed) {
+      this.amendWithBracketsPositioning(statementParsed);
+    }
+
+    // statementParsed.position.end;
 
     return statementParsed;
   }
 
-  private createPlaceholderId(length: number) {
-    const placeholder = `placeholder-${(
-      Math.random() * Math.pow(10, length)
-    ).toString(16)}`.substring(0, length);
+  private createPlaceholderId(length: number, prefix = 'pr-') {
+    const placeholder = `${prefix}${randomString(length)}`.substring(0, length);
 
     if (placeholder.length !== length) {
-      throw Error('Placeholder created incorrectly!');
+      throw Error(
+        `Placeholder created incorrectly! length: ${length}, placeholder: ${placeholder}`
+      );
     }
 
     return placeholder;
   }
-
   private parseLogicalStatement(
     queryFragment: string,
     queryCache: { [placeholder: string]: QueryNodeWithPosition },
@@ -116,20 +194,25 @@ export class Parser implements IParser {
 
     let position = start;
 
-    const unpacked: QueryNodeWithPosition[][] = andSplit.map((subs) => {
-      const andStatement = subs.map((subString) => {
+    const unpacked: QueryNodeWithPosition[][] = andSplit.map((subs, j) => {
+      const andStatement = subs.map((subString, i) => {
         let val: QueryNodeWithPosition;
         if (queryCache[subString]) {
           val = queryCache[subString];
-          position += 2;
+          // position += 1;
         } else {
           val = this.parseAtomicStatement(subString, position);
         }
         position += subString.length;
+        if (i !== subs.length - 1) {
+          position += LOGICAL_OPERATORS.AND.length;
+        }
         return val;
       });
 
-      position += LOGICAL_OPERATORS.AND.length;
+      if (j !== andSplit.length - 1) {
+        position += LOGICAL_OPERATORS.OR.length;
+      }
 
       return andStatement;
     });
@@ -188,13 +271,34 @@ export class Parser implements IParser {
     }
   }
 
+  private amendWithBracketsPositioning(qn: QueryNodeWithPosition) {
+    qn.position.start = qn.position.start - 1;
+    qn.position.end = qn.position.end + 1;
+  }
+
   private parseAtomicStatement(
     atomicFragment: string,
     start: number
   ): AtomicNodeWithPosition {
-    const split = atomicFragment.split(' ');
+    const trimmed = trimLeft(atomicFragment);
+    const delta = atomicFragment.length - trimmed.length;
+    const split = trimmed.split(' ');
 
     const [property, operatorKey, ...values] = split;
+
+    const lastValueIndex =
+      values[0][0] === '['
+        ? values.findIndex((val) => val[val.length - 1] === ']')
+        : 0;
+
+    const lastValue =
+      lastValueIndex === -1
+        ? values[values.length - 1]
+        : values[lastValueIndex];
+
+    const end = lastValue
+      ? start + atomicFragment.indexOf(lastValue) + lastValue.length
+      : start + atomicFragment.length;
 
     const operator = this.operators[operatorKey && operatorKey.toUpperCase()];
 
@@ -208,7 +312,7 @@ export class Parser implements IParser {
 
       node.position = {
         start,
-        end: start + atomicFragment.length,
+        length: start + atomicFragment.length,
         tokenPositions: {
           [start]: {
             type: 'AtomicProperty',
@@ -235,7 +339,7 @@ export class Parser implements IParser {
 
     node.position = {
       start,
-      end: start + atomicFragment.length,
+      end,
       tokenPositions: {
         [start]: {
           type: 'AtomicProperty',
@@ -267,10 +371,10 @@ export class Parser implements IParser {
         type: 'LogicalStart',
         node: parentNode,
       },
-      [end]: {
-        type: 'LogicalEnd',
-        node: parentNode,
-      },
+      // [end]: {
+      //   type: 'LogicalEnd',
+      //   node: parentNode,
+      // },
     };
 
     positions = children.reduce((pos, child, i, arr) => {
