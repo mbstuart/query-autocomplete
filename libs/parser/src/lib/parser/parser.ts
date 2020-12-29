@@ -303,7 +303,7 @@ export class Parser implements IParser {
       start
     );
 
-    if (!operatorKey) {
+    if (operatorKey === undefined) {
       const node: AtomicNodeWithPosition = {
         property,
         values: null,

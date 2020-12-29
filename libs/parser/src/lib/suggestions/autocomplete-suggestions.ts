@@ -30,7 +30,7 @@ export class AutocompleteSuggestions {
     });
   }
 
-  public suggest(position: number, token: QueryToken) {
+  public suggest(position: number, token: QueryToken, text: string) {
     try {
       let tokenType = token.type;
 
